@@ -1,0 +1,28 @@
+body {
+	font-family: Arial, Helvetica, sans-serif;
+}
+
+.tableStyle{
+	border: 1px solid black !important; 
+	border-collapse: collapse;
+	padding: 10px;;
+	margin: 10px;
+}
+
+.tableStyle thead{
+	color: white;
+	background-color: black;
+}
+
+.tableStyle *{
+	text-align: left;
+	border: 1px solid black !important; 
+}
+
+.ui-draggable, .ui-droppable {
+	background-position: top;
+}
+
+.w{
+	color: #FFF;
+}

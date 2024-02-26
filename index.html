@@ -1,0 +1,240 @@
+<html>
+
+<head>
+	<title>Color Finder</title>
+
+	<link href="./css/jquery-ui.css" rel="stylesheet">
+	<link href="./css/style.css" rel="stylesheet">
+	<!-- <link href="https://cdn.jsdelivr.net/npm/colorjs.io@0.0.5/dist/color.esm.js" rel="stylesheet"> -->
+
+	<script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+	<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+	<script src="https://browser.sentry-cdn.com/7.102.1/bundle.min.js"></script>
+
+	<script type="text/javascript" src="https://chir.ag/projects/ntc/ntc.js"></script>
+
+	<!--tab specific color-->
+	<script src="./js/findMatchingColorsTab.js"></script>
+	<script src="./js/nameThatColorTab.js"></script>
+	<script src="./js/nameThatColorCompleteTab.js"></script>
+	<script src="./js/averageColorTab.js"></script>
+
+	<script src="./js/colorCompare.js"></script>	
+	
+
+	<!--static color value files-->
+	<script src="./js/static/colorValues.js"></script>
+	<script src="./js/static/copicColorNames.js"></script>
+	<script src="./js/static/ohuhuColorNames.js"></script>
+	<script src="./js/static/nameThatColorNearestAlcoholMarkers.js"></script>
+
+
+	<script type="text/javascript">
+		
+		
+		function setMatchingColorsTab(){
+			$("#redInputValue").val(Math.floor(Math.random() * 255) + 1);
+			$("#greenInputValue").val(Math.floor(Math.random() * 255) + 1);
+			$("#blueInputValue").val(Math.floor(Math.random() * 255) + 1);
+
+			$("#maxNumberOfMatchingColors").attr({
+				// "min": 5,
+				"max": copicAndOhuhuColors.length
+			});
+
+			valueChanged();
+		}
+
+		function nameSort(a, b) {
+   			 return (a[1] > b[1] ? 1 : (a[1] < b[1] ? -1 : 0));
+  		};
+
+		function setNameThatColorTab(){
+			var output = [];
+			var sortedNames=ntc.names.sort(nameSort);
+			$.each(sortedNames, function(key, value)
+			{
+				var rgbStr = "rgb("+value[2]+","+value[3]+","+value[4]+")";
+
+				alt = ((value[2] + value[3] + value[4])/3 < 128);
+				// console.log(alt, key, value);
+  				output.push('<option value="'+ key +'"'+(alt ? " class='w'" : "")+' style="background-color: '+rgbStr+'" >'+ value[1]  +'</option>');				
+			});
+
+			$('#nameThatColorList').html(output.join(''));
+
+			//random color selected
+			var randomColorIndex=(Math.floor(Math.random() * sortedNames.length) + 1);
+			// console.log(">>>> ",randomColorIndex, sortedNames.length);
+			$('#nameThatColorList option:nth-child('+randomColorIndex+')').prop('selected', true);; 
+			nameThatColorMatchingCountChanged();
+		}
+
+		function setNameThatColorCompleteTab(){
+			// var nameThatColorNameList = $.map(ntc.names, function () {
+			// 	console.log(this);
+    		// 	return this;
+			// });
+
+			$('#nameThatColorsAutoSuggest').keyup(function() {
+    			// var dInput = this.value;
+    			// console.log(dInput);
+    			// $(".dDimension:contains('" + dInput + "')").css("display","block");
+				onNameThatColorsAutoSuggestChange();
+			});
+
+			// console.log("nameThatColorNameList ",nameThatColorNameList);
+			$( "#nameThatColorsAutoSuggest" ).autocomplete({
+      			source: nameThatColorNameList
+    		});
+
+			onNameThatColorsAutoSuggestChange();
+		}
+
+		// A $( document ).ready() block.
+		$(document).ready(function () {
+			// copicColorNames[0]
+			// console.log(copicColorNames);
+			// console.log("copic ",copicColorNames["bv0000"]);
+			setMatchingColorsTab();
+			setNameThatColorTab();
+
+			setNameThatColorCompleteTab();
+		});
+
+		function filesChanged() {
+			var filelist = document.getElementById("filesid").files || [];
+			for (var i = 0; i < filelist.length; i++) {
+				var file = filelist[i];
+				var img = getAvgRGBColor(file);
+			}
+		}
+
+		$(function () {
+			$("#tabs").tabs();
+		});
+	</script>
+
+	
+</head>
+
+<body>
+
+	<div id="tabs">
+		<ul>
+			<li><a href="#find-matching-colors">Find Matching Colors</a></li>
+			<li><a href="#get-average-color-for-image">Get Average Color</a></li>
+			<li><a href="#name-that-color">Name that Color</a></li>
+			<li><a href="#name-that-color-complete">Name that Color Complete</a></li>
+		</ul>
+
+
+		<!--TAB 1-->
+		<div id="find-matching-colors">
+			<p>
+				Enter RGB Value <br />
+				R:<input type="number" value="" id="redInputValue" min="0" max="255" onchange="valueChanged();" />&nbsp;
+				G:<input type="number" value="" id="greenInputValue" min="0" max="255" onchange="valueChanged();" />&nbsp;
+				B:<input type="number" value="" id="blueInputValue" min="0" max="255" onchange="valueChanged();" />
+
+				<br /> <br />
+			<div id="selectedColorBox" style="width: 200px;height: 100px;"></div>
+
+			<br />
+
+				Number of top matching colors <input type="number" value="5" id="maxNumberOfMatchingColors" min="1" max="255"  onchange="valueChanged();" />&nbsp;
+
+
+				<table class="tableStyle" id="matchingColorsTable" style="width: 100%; border: 1px;">
+					<thead>
+						<tr>
+							<th>Color Reference Image</th>
+							<th>Color</th>
+							<th>Copic Color Code(Copic Color Name)</th>
+							<th>Ohuhu Color Code(Ohuhu Color Name)</th>
+							<th>Name that Color</th>
+							<th>RGB Value</th>				
+							<th>HEX Value</th>
+							<th>HSL Value</th>
+							<th>DeltaE</th>
+						</tr>
+					</thead>
+					<tbody id="matchingColorsTBody">
+					</tbody>
+				</table>
+			</p>
+		</div>
+
+
+		<!--TAB 2-->
+		<div id="get-average-color-for-image">
+			<p>
+				<input id="filesid" type="file" name="name" multiple="multiple" onchange="filesChanged();" />
+			</p>
+		</div>
+
+
+		<!--TAB 3-->
+		<div id="name-that-color"> 
+			<p>
+				<select id="nameThatColorList" onchange="nameThatColorValueChanged(this)">
+				</select>
+				<div id="selectedNameThatColorBox" style="width: 200px;height: 100px;"></div>
+
+
+				Number of top matching colors <input type="number" value="5" id="maxNumberOfMatchingColorsNameThatColor" min="1" max="255"  onchange="nameThatColorMatchingCountChanged();" />&nbsp;
+
+
+				<table class="tableStyle" id="nameThatColorsTable" style="width: 100%; border: 1px;">
+					<thead>
+						<tr>
+							<th>Color Reference Image</th>
+							<th>Color</th>
+							<th>Copic Color Code(Copic Color Name)</th>
+							<th>Ohuhu Color Code(Ohuhu Color Name)</th>
+							<th>Name that Color</th>
+							<th>RGB Value</th>				
+							<th>HEX Value</th>
+							<th>HSL Value</th>
+							<th>DeltaE</th>
+						</tr>
+					</thead>
+					<tbody id="nameThatColorsTBody">
+					</tbody>
+				</table>
+			</p> 
+		</div>
+
+
+		<!--TAB 4-->
+		<div id="name-that-color-complete"> 
+			<p>
+				Enter Color:<input id="nameThatColorsAutoSuggest" >
+				
+				<!-- Calculate EDistance only for development purpose-->
+				<!-- <input type="button" value="Calculate EDistance" onclick="calculateEDistance()"/> -->
+
+				<table class="tableStyle" id="nameThatColorsCompleteTable" style="width: 100%; border: 1px;">
+					<thead>
+						<tr>							
+							<th>Color</th>
+							<th>Copic Color Code(Copic Color Name)</th>
+							<th>Ohuhu Color Code(Ohuhu Color Name)</th>
+							<th>Name that Color</th>
+							<th>RGB Value</th>				
+							<th>HEX Value</th>
+							<th>HSL Value</th>
+							<th>DeltaE(with Nearest Alcohol Marker Color)</th>
+						</tr>
+					</thead>
+					<tbody id="nameThatColorsCompleteTBody">
+					</tbody> 
+				</table> 
+			</p> 
+		</div>
+
+	</div>
+
+</body>
+
+</html>
